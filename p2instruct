@@ -1,0 +1,69 @@
+Sprint 1 — Core Engines
+Weeks 3-4, ≈ 30 h total
+
+Day range	Goal	Concrete subtasks
+W3 Mon–Wed	PDF/HTML Scraper	• scraper.py using PyMuPDF to extract text and images
+• --demo flag runs on a sample PtDA and writes text.txt, images/
+W3 Thu–Fri	Readability + CTS keyword pass	• Integrate textstat → SMOG & Gunning-Fog
+• Load CTS keyword list (CSV) → simple frequency counts
+• Output JSON (scores.json)
+W4 Mon–Tue	Unit tests & CLI	• pytest for edge cases (blank pages, scanned PDFs)
+• Package equicheck.py as a callable module
+W4 Wed–Fri	Refactor + Docs	• Auto-generate docs with mkdocs
+• Push example command and sample JSON to repo
+
+Milestone deliverable: equicheck.py returns { readability, cts_keywords } for any PtDA in < 3 s.
+
+
+
+
+
+Sprint 2 — Risk & UI Integration
+Weeks 5-6, ≈ 30 h total
+
+Day range	Goal	Concrete subtasks
+W5 Mon–Thu	NumiCraft engine	• RegEx parser for %, “X in Y”, and relative risk
+• riskify.py → returns JSON and saves colour-blind-safe icon array (matplotlib)
+• Write two multiple-choice items per found number
+W5 Fri	Berlin Numeracy wrapper	• Add 3-item short form; auto-calculate score
+W6 Mon–Wed	Front-end React widget	• ClarifyWidget.jsx shows (a) original paragraph, (b) rewritten plain-language version from GPT-3.5, (c) risk icon graphic, (d) cultural-equity radar badge
+W6 Thu–Fri	API glue	• Flask FastAPI stub that calls scraper → equicheck → riskify and returns one consolidated JSON
+• Proxy endpoint /process?url= for Netlify
+
+Milestone deliverable: Visiting the Netlify URL with ?url=<sample.pdf> renders interactive processed PtDA.
+
+
+
+
+
+Sprint 3 — Internal Usability & Accessibility
+Week 7, ≈ 15 h
+
+Day	Task	Detail
+Mon	WCAG pass	Use Lighthouse → fix contrast & tab order
+Tue	Keyboard-only & screen-reader test	NVDA + Chrome; document bugs
+Wed	5-participant hallway test	Scenario: “Pretend you’re deciding about a flu shot.”
+• Collect SUS forms
+• Record task-completion time
+Thu	Bug-fix & polish	Address top SUS pain-points
+• Improve icon labels, shorten GPT text
+Fri	Accessibility statement	Add docs/accessibility.md summarising conformance level
+
+Success criterion: mean SUS ≥ 68 (industry “good”) and no blocker accessibility issues.
+
+
+
+
+
+Sprint 4 — Packaging & Demo Prep
+Week 8, ≈ 15 h
+
+Day	Task	Output
+Mon	Write quick-start README	copy-paste commands, live demo link
+Tue	Create 5-min screen-capture	OBS → MP4, upload to Google Drive
+Wed	Automated deploy	Netlify build hook on main; custom domain e.g. clarifyplus.app
+Thu	Compile short tech report	6-page PDF: background, methods, screenshots, SUS stats
+Fri	Buffer / contingency	Hot-fixes, mentor review
+
+Milestone deliverable: public MVP + documentation ready for Phase 3 pilot.
+
