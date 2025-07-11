@@ -1,0 +1,99 @@
+{
+  "readability": {
+    "smog_index": 9.2,
+    "gunning_fog": 10.5,
+    "flesch_kincaid_grade": 8.7,
+    "average_grade_level": 9.5
+  },
+  "cts_keywords": {
+    "total_matches": 24,
+    "matches_by_category": {
+      "medical_condition": {
+        "count": 8,
+        "weighted_count": 8.0
+      },
+      "medical_treatment": {
+        "count": 5,
+        "weighted_count": 5.0
+      },
+      "medical_term": {
+        "count": 3,
+        "weighted_count": 3.0
+      },
+      "ethnicity": {
+        "count": 4,
+        "weighted_count": 6.0
+      },
+      "age_group": {
+        "count": 2,
+        "weighted_count": 1.6
+      },
+      "gender": {
+        "count": 2,
+        "weighted_count": 2.0
+      }
+    },
+    "matched_keywords": [
+      {
+        "keyword": "diabetes",
+        "category": "medical_condition",
+        "count": 5,
+        "weight": 1.0
+      },
+      {
+        "keyword": "insulin",
+        "category": "medical_treatment",
+        "count": 3,
+        "weight": 1.0
+      },
+      {
+        "keyword": "blood sugar",
+        "category": "medical_term",
+        "count": 3,
+        "weight": 1.0
+      },
+      {
+        "keyword": "african american",
+        "category": "ethnicity",
+        "count": 2,
+        "weight": 1.5
+      },
+      {
+        "keyword": "latino",
+        "category": "ethnicity",
+        "count": 2,
+        "weight": 1.5
+      },
+      {
+        "keyword": "elderly",
+        "category": "age_group",
+        "count": 2,
+        "weight": 0.8
+      },
+      {
+        "keyword": "doctor",
+        "category": "medical_professional",
+        "count": 2,
+        "weight": 1.0
+      },
+      {
+        "keyword": "male",
+        "category": "gender",
+        "count": 1,
+        "weight": 1.0
+      },
+      {
+        "keyword": "female",
+        "category": "gender",
+        "count": 1,
+        "weight": 1.0
+      }
+    ]
+  },
+  "metadata": {
+    "title": "Understanding Diabetes Risk Factors",
+    "author": "National Health Institute",
+    "subject": "Patient Decision Aid",
+    "page_count": 8
+  }
+}

@@ -1,0 +1,31 @@
+keyword,category,weight
+diabetes,medical_condition,1.0
+insulin,medical_treatment,1.0
+blood sugar,medical_term,1.0
+doctor,medical_professional,1.0
+clinic,medical_facility,1.0
+anxiety,mental_health,1.2
+depression,mental_health,1.2
+elderly,age_group,0.8
+children,age_group,0.8
+pregnant,life_stage,1.0
+prenatal,life_stage,1.0
+african american,ethnicity,1.5
+latino,ethnicity,1.5
+hispanic,ethnicity,1.5
+asian,ethnicity,1.5
+indigenous,ethnicity,1.5
+male,gender,1.0
+female,gender,1.0
+transgender,gender,1.5
+lgbtq,identity,1.5
+religious,belief,1.0
+christian,belief,1.0
+muslim,belief,1.0
+jewish,belief,1.0
+buddhist,belief,1.0
+hindu,belief,1.0
+rural,geography,1.2
+urban,geography,1.2
+low income,socioeconomic,1.3
+food insecurity,socioeconomic,1.3
