@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Union, Optional
 
 import textstat
-from scraper import Scraper
+from .scraper import Scraper
 
 
 class EquiCheck:
@@ -45,10 +45,12 @@ class EquiCheck:
         if cts_keywords_path:
             self.load_cts_keywords(cts_keywords_path)
         else:
-            # Try to find cts_keywords.csv in the same directory as this file
-            default_path = os.path.join(os.path.dirname(__file__), "cts_keywords.csv")
-            if os.path.exists(default_path):
-                self.load_cts_keywords(default_path)
+            # Default path is relative to this script's location
+            default_path = Path(__file__).parent / "cts_keywords.csv"
+            if default_path.exists():
+                self.load_cts_keywords(str(default_path))
+            elif self.verbose:
+                print("Warning: Default CTS keywords file not found. No CTS analysis will be performed.")
                 
         if self.verbose:
             print(f"Initialized EquiCheck with {len(self.cts_keywords)} CTS keywords")
@@ -236,7 +238,9 @@ class EquiCheck:
         Returns:
             Path to the saved JSON file
         """
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        output_dir = os.path.dirname(output_path)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)

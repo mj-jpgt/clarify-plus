@@ -22,9 +22,12 @@ from bs4 import BeautifulSoup
 class Scraper:
     """Main scraper class for extracting text and images from PDF/HTML documents."""
 
-    def __init__(self, 
-                output_dir: str = "output", 
-                verbose: bool = False):
+    def __init__(self, output_dir: Optional[str] = None, verbose: bool = False):
+        if output_dir is None:
+            # Default to an 'output' directory inside the 'backend' folder
+            self.output_dir = Path(__file__).parent / "output"
+        else:
+            self.output_dir = Path(output_dir)
         """
         Initialize the scraper with output directory and verbosity settings.
 
