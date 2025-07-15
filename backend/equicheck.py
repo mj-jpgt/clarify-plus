@@ -11,6 +11,7 @@ import csv
 import json
 import os
 import re
+import sys
 from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Tuple, Union, Optional
@@ -41,11 +42,9 @@ class EquiCheck:
         self.verbose = verbose
         self.cts_keywords = {}
         
-        # Load CTS keywords if path is provided
         if cts_keywords_path:
             self.load_cts_keywords(cts_keywords_path)
         else:
-            # Default path is relative to this script's location
             default_path = Path(__file__).parent / "cts_keywords.csv"
             if default_path.exists():
                 self.load_cts_keywords(str(default_path))
@@ -58,14 +57,11 @@ class EquiCheck:
     def load_cts_keywords(self, file_path: str) -> None:
         """
         Load CTS keywords from a CSV file.
-        
         Expected format: keyword,category,weight
-        
-        Args:
-            file_path: Path to CSV file with CTS keywords
         """
         if not os.path.exists(file_path):
-            print(f"Warning: CTS keywords file not found at {file_path}")
+            if self.verbose:
+                print(f"Warning: CTS keywords file not found at {file_path}")
             return
             
         try:
@@ -81,43 +77,24 @@ class EquiCheck:
                             'category': category,
                             'weight': weight
                         }
-                        
             if self.verbose:
                 print(f"Loaded {len(self.cts_keywords)} CTS keywords from {file_path}")
-                
         except Exception as e:
             print(f"Error loading CTS keywords: {e}")
 
     def analyze_text(self, text: str) -> Dict:
         """
         Analyze text for readability and CTS keywords.
-        
-        Args:
-            text: Text to analyze
-            
-        Returns:
-            Dictionary with analysis results
         """
         if not text:
-            print("Warning: Empty text provided for analysis")
+            if self.verbose:
+                print("Warning: Empty text provided for analysis")
             return {
-                "readability": {
-                    "smog_index": None,
-                    "gunning_fog": None,
-                    "flesch_kincaid_grade": None,
-                    "average_grade_level": None
-                },
-                "cts_keywords": {
-                    "total_matches": 0,
-                    "matches_by_category": {},
-                    "matched_keywords": []
-                }
+                "readability": {},
+                "cts_keywords": {}
             }
             
-        # Calculate readability metrics
         readability = self._calculate_readability(text)
-        
-        # Find CTS keywords
         cts_analysis = self._find_cts_keywords(text)
         
         return {
@@ -125,61 +102,55 @@ class EquiCheck:
             "cts_keywords": cts_analysis
         }
 
+    def run(self, text: str) -> Dict:
+        """
+        Run the full analysis on the given text.
+        """
+        if self.verbose:
+            print(f"Analyzing text ({len(text)} characters)...")
+        
+        results = self.analyze_text(text)
+        
+        if self.verbose:
+            print("Analysis complete.")
+            
+        return results
+
     def _calculate_readability(self, text: str) -> Dict:
         """
         Calculate readability metrics for the given text.
-        
-        Args:
-            text: Text to analyze
-            
-        Returns:
-            Dictionary with readability scores
         """
-        # Calculate SMOG index
-        smog = textstat.smog_index(text)
-        
-        # Calculate Gunning Fog index
-        gunning_fog = textstat.gunning_fog(text)
-        
-        # Add Flesch-Kincaid grade level for additional context
-        flesch_kincaid = textstat.flesch_kincaid_grade(text)
-        
-        # Calculate average grade level
-        average_grade_level = (smog + gunning_fog + flesch_kincaid) / 3
-        
-        return {
-            "smog_index": round(smog, 2),
-            "gunning_fog": round(gunning_fog, 2),
-            "flesch_kincaid_grade": round(flesch_kincaid, 2),
-            "average_grade_level": round(average_grade_level, 2)
-        }
+        try:
+            smog = textstat.smog_index(text)
+            gunning_fog = textstat.gunning_fog(text)
+            flesch_kincaid = textstat.flesch_kincaid_grade(text)
+            average_grade_level = (smog + gunning_fog + flesch_kincaid) / 3
+            
+            return {
+                "smog_index": round(smog, 2),
+                "gunning_fog": round(gunning_fog, 2),
+                "flesch_kincaid_grade": round(flesch_kincaid, 2),
+                "average_grade_level": round(average_grade_level, 2)
+            }
+        except Exception as e:
+            if self.verbose:
+                print(f"Could not calculate readability: {e}")
+            return {}
 
     def _find_cts_keywords(self, text: str) -> Dict:
         """
         Find CTS keywords in the text and analyze their frequency.
-        
-        Args:
-            text: Text to analyze
-            
-        Returns:
-            Dictionary with CTS keyword analysis
         """
         if not self.cts_keywords:
-            if self.verbose:
-                print("Warning: No CTS keywords loaded, skipping keyword analysis")
             return {
                 "total_matches": 0,
                 "matches_by_category": {},
                 "matched_keywords": []
             }
             
-        # Convert text to lowercase for case-insensitive matching
         text_lower = text.lower()
-        
-        # Count occurrences of each keyword
         matches = []
         for keyword, info in self.cts_keywords.items():
-            # Simple word boundary matching
             pattern = r'\b' + re.escape(keyword) + r'\b'
             count = len(re.findall(pattern, text_lower))
             
@@ -191,7 +162,6 @@ class EquiCheck:
                     "weight": info['weight']
                 })
         
-        # Summarize by category
         categories = {}
         for match in matches:
             category = match['category']
@@ -208,120 +178,71 @@ class EquiCheck:
             "matches_by_category": categories,
             "matched_keywords": matches
         }
-        
-    def analyze_from_scraper_output(self, scraper_output: Dict) -> Dict:
-        """
-        Analyze text from scraper output.
-        
-        Args:
-            scraper_output: Dictionary output from Scraper
-            
-        Returns:
-            Dictionary with analysis results
-        """
-        text = scraper_output.get('text', '')
-        result = self.analyze_text(text)
-        
-        # Add basic metadata from scraper
-        result['metadata'] = scraper_output.get('metadata', {})
-        
-        return result
-        
-    def save_json(self, data: Dict, output_path: str) -> str:
-        """
-        Save analysis results as JSON.
-        
-        Args:
-            data: Dictionary with analysis results
-            output_path: Path to save JSON file
-            
-        Returns:
-            Path to the saved JSON file
-        """
-        output_dir = os.path.dirname(output_path)
-        if output_dir:
-            os.makedirs(output_dir, exist_ok=True)
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        
-        if self.verbose:
-            print(f"Saved analysis results to {output_path}")
-            
-        return output_path
-
 
 def main():
     """Main function to run the EquiCheck from the command line."""
     parser = argparse.ArgumentParser(
-        description="Analyze text for readability and cultural equity factors"
+        description="Analyze text for readability and cultural equity factors."
     )
     parser.add_argument(
-        "source", 
-        help="Text file, PDF file, or URL to analyze"
+        "source",
+        help="Path to a text file, PDF file, or a URL to be analyzed."
     )
     parser.add_argument(
         "-k", "--keywords",
-        help="Path to CSV file with CTS keywords"
+        dest="cts_keywords_path",
+        help="Path to a custom CTS keywords CSV file."
     )
     parser.add_argument(
         "-o", "--output",
-        default="scores.json",
-        help="Output JSON file path (default: scores.json)"
+        dest="output_path",
+        type=Path,
+        default=Path("output/equicheck_results.json"),
+        help="Path to save the output JSON file."
     )
     parser.add_argument(
-        "-v", "--verbose", 
+        "-v", "--verbose",
         action="store_true",
-        help="Print detailed information during analysis"
+        help="Enable verbose output."
     )
-    
     args = parser.parse_args()
-    
-    # Initialize EquiCheck
-    equicheck = EquiCheck(
-        cts_keywords_path=args.keywords,
-        verbose=args.verbose
-    )
-    
-    # Process source based on type
-    if args.source.lower().endswith('.txt'):
-        # It's a text file
-        with open(args.source, 'r', encoding='utf-8') as f:
-            text = f.read()
-        result = equicheck.analyze_text(text)
-    else:
-        # It's a PDF or URL, use scraper first
-        output_dir = os.path.dirname(args.output)
-        if not output_dir:
-            output_dir = '.'
-            
-        scraper = Scraper(output_dir=output_dir, verbose=args.verbose)
-        
-        if args.source.lower().startswith(('http://', 'https://')):
-            # It's a URL
-            scraper_result = scraper.extract_from_html(args.source)
-        else:
-            # It's a file path
-            scraper_result = scraper.extract_from_pdf(args.source)
-            
-        result = equicheck.analyze_from_scraper_output(scraper_result)
-    
-    # Save results
-    equicheck.save_json(result, args.output)
-    
-    # Print summary
-    if 'readability' in result:
-        print("\nReadability Scores:")
-        print(f"SMOG Index: {result['readability'].get('smog_index')}")
-        print(f"Gunning Fog: {result['readability'].get('gunning_fog')}")
-        print(f"Average Grade Level: {result['readability'].get('average_grade_level')}")
-    
-    if 'cts_keywords' in result:
-        print("\nCTS Keyword Analysis:")
-        print(f"Total Matches: {result['cts_keywords'].get('total_matches')}")
-        for category, info in result['cts_keywords'].get('matches_by_category', {}).items():
-            print(f"  {category}: {info.get('count')} matches")
 
+    equicheck = EquiCheck(cts_keywords_path=args.cts_keywords_path, verbose=args.verbose)
+
+    text_to_analyze = ""
+    if args.source.startswith(('http', 'https')) or args.source.lower().endswith('.pdf'):
+        if args.verbose:
+            print(f"Source is a URL or PDF. Running scraper...")
+        scraper = Scraper(verbose=args.verbose)
+        scraped_output_path = args.output_path.parent / "scraped_content.json"
+        scraper.run(args.source, scraped_output_path)
+        with open(scraped_output_path, 'r', encoding='utf-8') as f:
+            scraped_data = json.load(f)
+        text_to_analyze = scraped_data.get('text', '')
+    elif args.source.lower().endswith(('.txt', '.json')):
+        if args.verbose:
+            print(f"Source is a text or JSON file. Reading content...")
+        with open(args.source, 'r', encoding='utf-8') as f:
+            if args.source.lower().endswith('.json'):
+                text_to_analyze = json.load(f).get('text', '')
+            else:
+                text_to_analyze = f.read()
+    else:
+        print(f"Error: Unsupported source type for '{args.source}'. Please provide a URL, or a path to a .pdf, .txt, or .json file.")
+        sys.exit(1)
+
+    if not text_to_analyze:
+        print("Error: Could not extract text from the source.")
+        sys.exit(1)
+
+    results = equicheck.run(text_to_analyze)
+
+    args.output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(args.output_path, 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=4)
+
+    if args.verbose:
+        print(f"EquiCheck analysis complete. Results saved to {args.output_path}")
 
 if __name__ == "__main__":
     main()

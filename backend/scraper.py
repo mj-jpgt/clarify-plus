@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Tuple, Union, Optional
 
-import fitz  # PyMuPDF
+import PyPDF2
 import requests
 from bs4 import BeautifulSoup
 
@@ -22,116 +22,72 @@ from bs4 import BeautifulSoup
 class Scraper:
     """Main scraper class for extracting text and images from PDF/HTML documents."""
 
-    def __init__(self, output_dir: Optional[str] = None, verbose: bool = False):
-        if output_dir is None:
-            # Default to an 'output' directory inside the 'backend' folder
-            self.output_dir = Path(__file__).parent / "output"
-        else:
-            self.output_dir = Path(output_dir)
+    def __init__(self, verbose: bool = False):
         """
-        Initialize the scraper with output directory and verbosity settings.
+        Initialize the scraper.
 
         Args:
-            output_dir: Directory to save extracted content
-            verbose: Whether to print detailed information
+            verbose: Whether to print detailed information.
         """
-        self.output_dir = output_dir
         self.verbose = verbose
-        
-        # Create output directory if it doesn't exist
-        os.makedirs(output_dir, exist_ok=True)
-        os.makedirs(os.path.join(output_dir, "images"), exist_ok=True)
-        
         if self.verbose:
-            print(f"Initialized scraper. Output will be saved to {output_dir}")
+            print("Initialized scraper.")
 
     def extract_from_pdf(self, pdf_path: str) -> Dict:
         """
-        Extract text and images from a PDF file.
+        Extract text from a PDF file using PyPDF2.
+        Note: Image extraction from PDFs is not supported with PyPDF2.
 
         Args:
             pdf_path: Path to the PDF file
 
         Returns:
-            Dictionary with extracted text and image paths
+            Dictionary with extracted text and metadata
         """
         if self.verbose:
             print(f"Processing PDF: {pdf_path}")
             
         result = {
             "text": "",
-            "images": [],
+            "images": [],  # PDF Image extraction disabled
             "metadata": {},
             "pages": []
         }
         
         try:
-            # Open the PDF file
-            doc = fitz.open(pdf_path)
-            
-            # Extract metadata
-            result["metadata"] = {
-                "title": doc.metadata.get("title", ""),
-                "author": doc.metadata.get("author", ""),
-                "subject": doc.metadata.get("subject", ""),
-                "keywords": doc.metadata.get("keywords", ""),
-                "producer": doc.metadata.get("producer", ""),
-                "page_count": len(doc)
-            }
-            
-            # Process each page
-            full_text = ""
-            for page_num, page in enumerate(doc):
-                page_text = page.get_text()
-                full_text += page_text
+            with open(pdf_path, 'rb') as pdf_file:
+                reader = PyPDF2.PdfReader(pdf_file)
+                metadata = reader.metadata
                 
-                page_data = {
-                    "page_num": page_num + 1,
-                    "text": page_text,
-                    "images": []
+                result["metadata"] = {
+                    "title": metadata.title if metadata else "",
+                    "author": metadata.author if metadata else "",
+                    "subject": metadata.subject if metadata else "",
+                    "producer": metadata.producer if metadata else "",
+                    "page_count": len(reader.pages)
                 }
                 
-                # Extract images
-                image_list = page.get_images(full=True)
-                for img_index, img_info in enumerate(image_list):
-                    img_index_str = str(img_index)
-                    xref = img_info[0]
-                    base_img = doc.extract_image(xref)
-                    img_bytes = base_img["image"]
-                    img_ext = base_img["ext"]
-                    img_filename = f"page{page_num+1}_img{img_index}.{img_ext}"
-                    img_path = os.path.join(self.output_dir, "images", img_filename)
+                full_text = ""
+                for page_num, page in enumerate(reader.pages):
+                    page_text = page.extract_text() or ""
+                    full_text += page_text
                     
-                    # Save the image
-                    with open(img_path, "wb") as img_file:
-                        img_file.write(img_bytes)
-                    
-                    # Add image info to results
-                    img_info = {
-                        "path": img_path,
-                        "filename": img_filename,
-                        "extension": img_ext
+                    page_data = {
+                        "page_num": page_num + 1,
+                        "text": page_text,
+                        "images": [] # PDF Image extraction disabled
                     }
-                    result["images"].append(img_info)
-                    page_data["images"].append(img_info)
+                    result["pages"].append(page_data)
                 
-                result["pages"].append(page_data)
-            
-            result["text"] = full_text
-            
-            # Save the extracted text to a file
-            text_file_path = os.path.join(self.output_dir, "text.txt")
-            with open(text_file_path, "w", encoding="utf-8") as text_file:
-                text_file.write(full_text)
-                
+                result["text"] = full_text
+
             if self.verbose:
-                print(f"Extracted {len(result['images'])} images and {len(full_text)} characters of text")
-                
-            return result
-            
+                print(f"Extracted {len(full_text)} characters of text from PDF.")
+
         except Exception as e:
             print(f"Error extracting content from PDF: {e}")
-            return result
+        
+        return result
 
     def extract_from_html(self, url: str) -> Dict:
         """
@@ -213,7 +169,7 @@ class Scraper:
                             img_ext = 'unknown'
                     
                     img_filename = f"img{img_index}.{img_ext}"
-                    img_path = os.path.join(self.output_dir, "images", img_filename)
+                    img_path = self.images_dir / img_filename
                     
                     # Save the image
                     with open(img_path, "wb") as img_file:
@@ -221,7 +177,7 @@ class Scraper:
                     
                     # Add image info to results
                     img_info = {
-                        "path": img_path,
+                        "path": str(img_path),
                         "filename": img_filename,
                         "extension": img_ext,
                         "original_url": img_url,
@@ -232,11 +188,6 @@ class Scraper:
                     
                 except Exception as e:
                     print(f"Error downloading image {img_url}: {e}")
-            
-            # Save the extracted text to a file
-            text_file_path = os.path.join(self.output_dir, "text.txt")
-            with open(text_file_path, "w", encoding="utf-8") as text_file:
-                text_file.write(text)
                 
             if self.verbose:
                 print(f"Extracted {len(result['images'])} images and {len(text)} characters of text")
@@ -247,68 +198,56 @@ class Scraper:
             print(f"Error extracting content from HTML: {e}")
             return result
             
-    def save_json(self, data: Dict, filename: str = "extracted_content.json") -> str:
+    def run(self, source: str, output_path: Path):
         """
-        Save extracted data as JSON.
+        Run the full extraction process for a given source and save to output path.
+        """
+        # Ensure output directories exist
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        self.images_dir = output_path.parent / "images"
+        self.images_dir.mkdir(exist_ok=True)
+
+        if source.startswith(('http://', 'https://')):
+            data = self.extract_from_html(source)
+        elif Path(source).is_file() and Path(source).suffix.lower() == '.pdf':
+            data = self.extract_from_pdf(source)
+        else:
+            raise ValueError("Source must be a valid URL or path to a PDF file.")
+
+        self.save_json(data, output_path)
+        if self.verbose:
+            print(f"[bold green]Scraping complete. Results saved to {output_path}[/bold green]")
+
+    def save_json(self, data: Dict, output_path: Path):
+        """
+        Save the extracted data to a JSON file.
 
         Args:
             data: Dictionary with extracted data
-            filename: Output JSON filename
-
-        Returns:
-            Path to the saved JSON file
+            output_path: Path to the output JSON file
         """
-        output_path = os.path.join(self.output_dir, filename)
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
+            json.dump(data, f, indent=4)
         
         if self.verbose:
-            print(f"Saved extracted content to {output_path}")
-            
-        return output_path
+            print(f"Saved JSON data to {output_path}")
 
 
 def main():
     """Main function to run the scraper from the command line."""
-    parser = argparse.ArgumentParser(
-        description="Extract text and images from PDF files or HTML pages"
-    )
-    parser.add_argument(
-        "source", 
-        help="PDF file path or URL to an HTML page"
-    )
-    parser.add_argument(
-        "-o", "--output", 
-        default="output",
-        help="Output directory for extracted content (default: 'output')"
-    )
-    parser.add_argument(
-        "--demo", 
-        action="store_true",
-        help="Run on sample PtDA and output to text.txt and images/"
-    )
-    parser.add_argument(
-        "-v", "--verbose", 
-        action="store_true",
-        help="Print detailed information during extraction"
-    )
+    parser = argparse.ArgumentParser(description="Clarify+ PDF/HTML Scraper")
+    parser.add_argument("source", help="Path or URL to the document to process")
+    parser.add_argument("-o", "--output", dest="output_path", type=Path, default=Path("output/scraped_content.json"), help="Path to save the output JSON file.")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose output")
     
     args = parser.parse_args()
     
-    # Initialize the scraper
-    scraper = Scraper(output_dir=args.output, verbose=args.verbose)
-    
-    # Handle demo mode
-    if args.demo:
-        # Look for sample files in the docs directory
-        docs_dir = Path(__file__).parent.parent / "docs"
-        sample_files = list(docs_dir.glob("*.pdf"))
-        
-        if not sample_files:
-            print("Error: No sample PDF files found in the docs directory")
-            sys.exit(1)
-        
-        # Use the first PDF file found
+    scraper = Scraper(verbose=args.verbose)
+    try:
+        scraper.run(args.source, args.output_path)
+    except (ValueError, FileNotFoundError) as e:
+        print(f"Error: {e}")
+        sys.exit(1)
         sample_file = str(sample_files[0])
         print(f"Demo mode: Using sample file {sample_file}")
         source = sample_file

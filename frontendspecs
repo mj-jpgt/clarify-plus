@@ -1,0 +1,133 @@
+1 Information Architecture
+Tier	Page / Feature	Purpose
+Awareness / Trust	Home / Why It Matters – explainer carousel, 60-sec hero video, impact stats
+FAQs – privacy, data sources, GPT use, equity safeguards
+Your Rights – HIPAA summary & plain-language consent
+Resource Hub – links to CDC, NIH med literacy guides	Build credibility; satisfy legal & equity guidelines
+Core Experience	MedMix Dashboard – live med & condition board, duplicate/high-risk flags, plain-English cards
+Decision Aid Viewer – inline EquiCheck badge + NumiCraft risk graphics + HelpBot sidebar
+Adaptive Gamelets – 30-sec numeracy quizzes that surface only when confusion cues fire	Deliver primary value
+Support / Config	Help & Chat – live HelpBot + searchable glossary
+Settings – language toggle (EN/ES), font-size slider (100-140 %), dark mode, wearable pairing
+Profile – optional demographics to improve tailoring (stored locally)	Accessibility, personalisation, transparency
+
+2 Global Design Principles
+Principle	Implementation
+Inclusive visual language	• Colour-blind-safe palette (Blue #0b72ff, Orange #ff9d00, Teal #009e9e, Greys 800/700/600).
+• All icons from Phosphor set; each with aria-label and 12-word alt text.
+• Stock photos: diverse age, race, assistive-tech users; use CC0 Unsplash Health collection.
+Typography & spacing	• Inter, weight 400/600/700.
+• Base font 1 rem (16 px) → scale 1.25 (modular); line-height 1.6.
+• 8-pt spacing grid; min touch target 44 × 44 px.
+Motion for cognition	• Use Framer Motion fade-in (300 ms) for sections; limit to 2 animation layers per page.
+• Reduce-motion preference honoured (prefers-reduced-motion).
+Progressive disclosure	• “Show details” accordions hide pharmacology jargon.
+• Risk graphics start pooled; tap “More detail” to reveal subgroup charts.
+Realtime adaptability	• userContext React context stores dwell time, quiz accuracy, confusion flag.
+• Component props accept difficultyLevel 0–2 to scale text & graphic complexity.
+WCAG 2.1 AA compliance	• Contrast ≥ 4.5:1; tested with AXE.
+• Keyboard navigation: logical tab order, visible focus ring (#0b72ff 2 px).
+
+3 Key Screens & Components
+3.1 Home / Why It Matters
+Hero Section
+
+txt
+Copy
+Edit
+[60-sec Lottie animation]        [CTA Button]   →  “Get My Personal Guide”
+Headline: “Say goodbye to confusing health info”
+Sub-text (≤ 20 words, 6th grade)
+Impact Stats Strip
+• 95 % users understood meds in first try • 30 % faster decisions • 100 % WCAG accessible
+
+numbers animate counter-up on scroll for modern feel.
+
+3.2 MedMix Dashboard
+Element	Spec
+Header	Condition filter pills (e.g., “Diabetes”, “Hypertension”).
+Med Card	320 × 120 px; Pill icon, Drug name (bold 600), Plain-English purpose (max 12 words). Bottom-left risk badge: green / amber / red.
+Duplicate Detector Banner	Sticky top; shows “2 duplicates found” with drop-down to resolve.
+Side Panel (“Explain” mode)	Slides in on click; GPT rewrite + Español tab; bullet list of dosage & 2 side-effects.
+
+Responsive layout: 1-col (≤ 480 px), 2-col (481-1024 px), 3-col (desktop).
+
+3.3 Decision Aid Viewer
+mathematica
+Copy
+Edit
+Top Bar:  [Back]  Document Title          EquiCheck Badge (radar sparkline)
+Content:  Original paragraph (grey bg)   |  Plain-English version (white card)
+          Risk icon array & micro-quest  |  HelpBot CTA / Chat bubble
+Bottom:   Progress bar 10 % ... 100 %
+Micro-Quest Drawer emerges when confusionFlag==true. Contains two MCQs + instant feedback.
+
+3.4 HelpBot Chat
+UX	Spec
+Entry	Floating chat icon bottom-right (tab-focusable).
+Prompt guard-rail	System prompt forces citations & avoids personal medical advice.
+Suggested chips	Autocomplete with top misunderstood terms from survey (“relative risk?”, “side-effect”).
+Exit	“Done” button returns transcript (downloadable PDF).
+
+4 Navigation & Flow
+Device	Nav pattern
+Mobile	Bottom nav bar (Home, Dashboard, Viewer, Chat, Settings).
+Tablet/Desktop	Left vertical nav rail (icons + labels), collapsible to icons-only.
+
+Key flow (first-time user): Home → CTA → Onboarding (3 swipes, 2 questions) → Permission pop-up → MedMix → Choose PtDA → Decision Viewer → Chat / Gamelets.
+
+5 Accessibility & Inclusivity Add-Ons
+Language Toggle always visible in top-right; defaults to device locale; persists in localStorage.
+
+Dynamic text resize (drag slider) driven by CSS rem root override; tested up to 140 %.
+
+Screen-reader landmarks: <header> <nav> <main> <aside> <footer>.
+
+Alt-text linter in CI checks every <img> for alt.
+
+Cultural-fit checker warns author if icons/idioms mismatch selected audience profile.
+
+High-contrast mode toggle (yellow on black), auto-detected via OS settings.
+
+
+7 Micro-Interaction Cheatsheet
+Trigger	Feedback
+Duplicate med removed	Toast “Duplicate resolved” + fade-out duplicate card
+Quiz correct	Confetti burst (prefers-reduced-motion? → simple tick)
+Equity badge +5 pts	Pulse animation on radar chart segment
+Wearable disconnect	Snack bar with reconnect button
+
+8 Content Rules & Copy Tone
+Grade Level: aim SMOG ≤ 8; EquiCheck blocks publish if > 10.
+
+Voice: active, second person (“You can…”).
+
+Numeracy language: always pair % with “X out of 100” wording.
+
+Avoid jargon: flag terms not on plain-language list; auto-link to glossary.
+
+9 Testing Checklists
+Test	Tool
+Keyboard tab cycle	Axe + manual
+Color-contrast audit	Lighthouse
+RTL language flip (future)	dir="rtl" switch
+iOS+Android screen-reader	VoiceOver + TalkBack
+Performance (LCP <2.5 s)	WebPageTest
+
+
+
+module.exports = {
+  theme: {
+    extend: {
+      colors: {
+        primary:   '#0b72ff',      // blue600
+        accent:    '#ff9d00',      // orange500
+        success:   '#009e9e',      // teal500
+        danger:    '#ef4444',      // red500
+        grayText:  '#4b5563',      // gray600
+      },
+      borderRadius: { 'xl2': '1.25rem' },
+      boxShadow: { 'soft': '0 4px 14px rgba(0,0,0,.12)' },
+    }
+  }
+}
